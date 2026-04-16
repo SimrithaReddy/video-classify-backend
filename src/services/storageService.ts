@@ -2,11 +2,12 @@ import multer, { type FileFilterCallback } from "multer";
 import { AppError } from "../utils/errors";
 
 const allowedMimeTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+const maxVideoUploadSizeBytes = 70 * 1024 * 1024;
 
 export const uploadMiddleware = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 150 * 1024 * 1024,
+    fileSize: maxVideoUploadSizeBytes,
   },
   fileFilter: (_req, file, cb: FileFilterCallback) => {
     if (!allowedMimeTypes.includes(file.mimetype)) {

@@ -42,10 +42,6 @@ export async function updateUserRole(
       return;
     }
 
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.params);
-
     const user = await User.findOneAndUpdate(
       { _id: req.params.userId },
       { role },
