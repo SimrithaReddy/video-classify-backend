@@ -54,6 +54,7 @@ async function buildVideoAccessFilter(user: NonNullable<Request["user"]>) {
   const adminAssignedFilter = {
     ownerId: { $in: adminOwnerIds },
     assignedViewerIds: userObjectId,
+    accessScope: "tenant"
   };
   const adminAllowedViewerFilter = {
     ownerId: { $in: adminOwnerIds },
