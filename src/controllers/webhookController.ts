@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import type { Server } from "socket.io";
 import Video from "../models/Video";
 import {
-  extractModerationSnapshot,
+  // extractModerationSnapshot,
   verifyCloudinaryNotificationSignature,
 } from "../services/cloudinaryService";
 
@@ -24,71 +24,71 @@ function asRawBody(body: unknown): string {
   return "";
 }
 
-export async function handleCloudinaryWebhook(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const rawBody = asRawBody(req.body);
-    if (!rawBody) {
-      res.status(400).json({ message: "Webhook body is required" });
-      return;
-    }
+// export async function handleCloudinaryWebhook(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> {
+//   try {
+//     const rawBody = asRawBody(req.body);
+//     if (!rawBody) {
+//       res.status(400).json({ message: "Webhook body is required" });
+//       return;
+//     }
 
-    const signature = String(req.header("X-Cld-Signature") || "");
-    const timestampHeader = String(req.header("X-Cld-Timestamp") || "");
-    const timestamp = Number(timestampHeader);
+//     const signature = String(req.header("X-Cld-Signature") || "");
+//     const timestampHeader = String(req.header("X-Cld-Timestamp") || "");
+//     const timestamp = Number(timestampHeader);
 
-    if (!signature || !Number.isFinite(timestamp)) {
-      res.status(401).json({ message: "Missing Cloudinary signature headers" });
-      return;
-    }
+//     if (!signature || !Number.isFinite(timestamp)) {
+//       res.status(401).json({ message: "Missing Cloudinary signature headers" });
+//       return;
+//     }
 
-    if (!verifyCloudinaryNotificationSignature(rawBody, timestamp, signature)) {
-      res.status(401).json({ message: "Invalid Cloudinary webhook signature" });
-      return;
-    }
+//     if (!verifyCloudinaryNotificationSignature(rawBody, timestamp, signature)) {
+//       res.status(401).json({ message: "Invalid Cloudinary webhook signature" });
+//       return;
+//     }
 
-    const payload = JSON.parse(rawBody) as CloudinaryWebhookBody;
-    if (!payload.public_id) {
-      res.status(200).json({ ok: true });
-      return;
-    }
+//     const payload = JSON.parse(rawBody) as CloudinaryWebhookBody;
+//     if (!payload.public_id) {
+//       res.status(200).json({ ok: true });
+//       return;
+//     }
 
-    const moderationSnapshot = extractModerationSnapshot(
-      payload.moderation_status
-        ? [{ status: payload.moderation_status }]
-        : payload.moderation
-    );
+//     const moderationSnapshot = extractModerationSnapshot(
+//       payload.moderation_status
+//         ? [{ status: payload.moderation_status }]
+//         : payload.moderation
+//     );
 
-    if (!moderationSnapshot) {
-      res.status(200).json({ ok: true });
-      return;
-    }
+//     if (!moderationSnapshot) {
+//       res.status(200).json({ ok: true });
+//       return;
+//     }
 
-    const video = await Video.findOneAndUpdate(
-      { cloudinaryPublicId: payload.public_id },
-      {
-        cloudinaryModerationStatus: moderationSnapshot.status,
-        cloudinaryModerationKind: moderationSnapshot.kind,
-        cloudinaryModerationUpdatedAt: new Date(),
-      },
-      { new: true }
-    );
+//     const video = await Video.findOneAndUpdate(
+//       { cloudinaryPublicId: payload.public_id },
+//       {
+//         cloudinaryModerationStatus: moderationSnapshot.status,
+//         cloudinaryModerationKind: moderationSnapshot.kind,
+//         cloudinaryModerationUpdatedAt: new Date(),
+//       },
+//       { new: true }
+//     );
 
-    if (video) {
-      const io = req.app.get("io") as Server;
-      io.to(video.tenantId).emit("video:moderation", {
-        videoId: video._id.toString(),
-        moderationStatus: video.cloudinaryModerationStatus,
-        moderationKind: video.cloudinaryModerationKind,
-        moderationUpdatedAt: video.cloudinaryModerationUpdatedAt,
-      });
-    }
+//     if (video) {
+//       const io = req.app.get("io") as Server;
+//       io.to(video.tenantId).emit("video:moderation", {
+//         videoId: video._id.toString(),
+//         moderationStatus: video.cloudinaryModerationStatus,
+//         moderationKind: video.cloudinaryModerationKind,
+//         moderationUpdatedAt: video.cloudinaryModerationUpdatedAt,
+//       });
+//     }
 
-    res.status(200).json({ ok: true });
-  } catch (error) {
-    next(error);
-  }
-}
+//     res.status(200).json({ ok: true });
+//   } catch (error) {
+//     next(error);
+//   }
+// }
