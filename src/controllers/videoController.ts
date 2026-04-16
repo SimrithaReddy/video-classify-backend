@@ -3,6 +3,7 @@ import fs from "fs";
 import type { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
 import type { Server } from "socket.io";
+import User from "../models/User";
 import Video from "../models/Video";
 import {
   deleteCloudinaryVideo,
@@ -38,14 +39,34 @@ interface StreamQuery {
   quality?: string;
 }
 
-function canViewerAccessFilter(userId: string) {
-  return {
-    $or: [
-      { accessScope: "tenant" },
-      { assignedViewerIds: new Types.ObjectId(userId) },
-      { ownerId: new Types.ObjectId(userId) },
-    ],
+async function getAdminOwnerIds(tenantId: string) {
+  const admins = await User.find({ tenantId, role: "admin" }).select("_id");
+  return admins.map((admin) => admin._id);
+}
+
+async function buildVideoAccessFilter(user: NonNullable<Request["user"]>) {
+  if (user.role === "admin") {
+    return {};
+  }
+
+  const userObjectId = new Types.ObjectId(user.id);
+  const adminOwnerIds = await getAdminOwnerIds(user.tenantId);
+  const adminAssignedFilter = {
+    ownerId: { $in: adminOwnerIds },
+    assignedViewerIds: userObjectId,
   };
+  const adminAllowedViewerFilter = {
+    ownerId: { $in: adminOwnerIds },
+    $or: [{ accessScope: "tenant" }, { assignedViewerIds: userObjectId }],
+  };
+
+  if (user.role === "editor") {
+    return {
+      $or: [{ ownerId: userObjectId }, adminAssignedFilter],
+    };
+  }
+
+  return adminAllowedViewerFilter;
 }
 
 function escapeRegex(text: string): string {
@@ -132,11 +153,9 @@ export async function listVideos(
       q,
     } = req.query;
 
-    const query: Record<string, unknown> = { tenantId: req.user!.tenantId };
+    const accessFilter = await buildVideoAccessFilter(req.user!);
+    const query: Record<string, unknown> = { tenantId: req.user!.tenantId, ...accessFilter };
     const andFilters: Record<string, unknown>[] = [];
-    if (req.user!.role === "viewer") {
-      andFilters.push(canViewerAccessFilter(req.user!.id));
-    }
     if (sensitivityStatus) query.sensitivityStatus = sensitivityStatus;
     if (processingStatus) query.processingStatus = processingStatus;
     if (category) query.category = category;
@@ -181,7 +200,8 @@ export async function listVideos(
 
 export async function listCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const categories = await Video.distinct("category", { tenantId: req.user!.tenantId });
+    const accessFilter = await buildVideoAccessFilter(req.user!);
+    const categories = await Video.distinct("category", { tenantId: req.user!.tenantId, ...accessFilter });
     categories.sort((a, b) => String(a).localeCompare(String(b)));
     res.json(categories);
   } catch (error) {
@@ -195,10 +215,11 @@ export async function getVideo(
   next: NextFunction
 ): Promise<void> {
   try {
+    const accessFilter = await buildVideoAccessFilter(req.user!);
     const video = await Video.findOne({
       _id: req.params.videoId,
       tenantId: req.user!.tenantId,
-      ...(req.user!.role === "viewer" ? canViewerAccessFilter(req.user!.id) : {}),
+      ...accessFilter,
     });
     if (!video) {
       res.status(404).json({ message: "Video not found" });
@@ -260,10 +281,11 @@ export async function streamVideo(
   next: NextFunction
 ): Promise<void> {
   try {
+    const accessFilter = await buildVideoAccessFilter(req.user!);
     const video = await Video.findOne({
       _id: req.params.videoId,
       tenantId: req.user!.tenantId,
-      ...(req.user!.role === "viewer" ? canViewerAccessFilter(req.user!.id) : {}),
+      ...accessFilter,
     });
     if (!video) {
       res.status(404).json({ message: "Video not found" });
