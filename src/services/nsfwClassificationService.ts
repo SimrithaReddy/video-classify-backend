@@ -154,61 +154,6 @@ export async function classifyVideoSensitivity(mediaUrl: string): Promise<Classi
 }
 
 
-// Pass the API Key directly to the client
-const client = new VideoIntelligenceServiceClient({
-  apiKey: env.googleKey
-});
-type VideoSafetyStatus = {
-  status: "flagged" | "safe";
-};
-
-export async function classifyVideoSensitivityByGoogleKey(
-  videoUrl: string
-): Promise<VideoSafetyStatus> {
-  try {
-    const request: any = {
-      inputUri: videoUrl,
-      features: ["EXPLICIT_CONTENT_DETECTION"],
-    };
-
-    console.log(videoUrl, "🎥 Analyzing video for sensitive content...");
-
-    // Start async video analysis
-    const [operation] = await (client.annotateVideo(request) as unknown as Promise<[any]>);
-
-    // Wait for completion
-    const [annotationResult] = await operation.promise();
-
-    const explicitContentResults =
-      annotationResult.annotationResults?.[0]?.explicitAnnotation;
-
-    let flagged = false;
-
-    if (explicitContentResults?.frames?.length) {
-      console.log("⚠️ Checking frames for sensitive content...");
-
-      for (const frame of explicitContentResults.frames) {
-        const likelihood = frame.pornographyLikelihood;
-
-        if (likelihood === "LIKELY" || likelihood === "VERY_LIKELY") {
-          flagged = true;
-          break; // optimization: stop early
-        }
-      }
-    }
-
-    return {
-      status: flagged ? "flagged" : "safe",
-    };
-  } catch (error) {
-    console.error("❌ Error analyzing video:", error);
-
-    // You can decide behavior on failure
-    return {
-      status: "safe", // or "flagged" depending on strictness
-    };
-  }
-}
 
 
 

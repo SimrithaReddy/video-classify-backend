@@ -51,20 +51,7 @@ interface UploadVideoBufferInput {
   originalName: string;
 }
 
-export interface CloudinaryModerationSnapshot {
-  kind?: string;
-  status?: "pending" | "approved" | "rejected";
-}
 
-
-export function verifyCloudinaryNotificationSignature(
-  body: string,
-  timestamp: number,
-  signature: string
-): boolean {
-  const client = ensureCloudinaryConfig();
-  return client.utils.verifyNotificationSignature(body, timestamp, signature);
-}
 
 export async function deleteCloudinaryVideo(publicId: string): Promise<void> {
   const client = ensureCloudinaryConfig();

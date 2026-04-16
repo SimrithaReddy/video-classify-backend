@@ -1,7 +1,7 @@
 import type { Server } from "socket.io";
 import Video, { type VideoDocument } from "../models/Video";
 import { probeDurationSeconds } from "./ffmpegProbeService";
-import { classifyVideoSensitivity, classifyVideoSensitivityByGoogleKey } from "./nsfwClassificationService";
+import { classifyVideoSensitivity } from "./nsfwClassificationService";
 import { buildPlaybackVariants } from "./videoTransformService";
 import type { SensitivityStatus } from "../types/domain";
 import { getErrorMessage } from "../utils/errors";
@@ -26,11 +26,6 @@ export async function classifySensitivity(
 ): Promise<Extract<SensitivityStatus, "safe" | "flagged">> {
   const mediaUrl = video.cloudinarySecureUrl || video.storagePath;
   try {
-
-    // const fallbackStatus: any = await classifyVideoSensitivityByGoogleKey(mediaUrl);
-    // if (fallbackStatus?.status === "flagged") {
-    //   return "flagged";
-    // };
 
     const nsfwResult = await classifyVideoSensitivity(mediaUrl);
     if (nsfwResult.status === "flagged") {
