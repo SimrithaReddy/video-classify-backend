@@ -1,8 +1,8 @@
-import express from "express";
-import { handleCloudinaryWebhook } from "../controllers/webhookController";
+// import express from "express";
+// // import { handleCloudinaryWebhook } from "../controllers/webhookController";
 
-const router = express.Router();
+// const router = express.Router();
 
-router.post("/", handleCloudinaryWebhook);
+// // router.post("/", handleCloudinaryWebhook);
 
-export default router;
+// export default router;
