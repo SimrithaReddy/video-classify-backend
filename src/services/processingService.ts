@@ -36,7 +36,7 @@ export async function classifySensitivity(
     return "safe";
 
   } catch (error) {
-    console.log(error.message, "error.message>>>>>>>>>>>");
+    console.log(error?.message, "error.message>>>>>>>>>>>");
     throw error instanceof Error ? error : new Error("Sensitivity analysis failed");
   }
 }
