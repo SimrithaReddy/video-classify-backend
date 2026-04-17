@@ -25,15 +25,18 @@ export async function classifySensitivity(
   video: Pick<VideoDocument, "title" | "fileSize" | "originalName" | "cloudinarySecureUrl" | "storagePath">
 ): Promise<Extract<SensitivityStatus, "safe" | "flagged">> {
   const mediaUrl = video.cloudinarySecureUrl || video.storagePath;
+  console.log(mediaUrl, "mediaUrl>>>>>>>>>>>");
   try {
 
     const nsfwResult = await classifyVideoSensitivity(mediaUrl);
+    console.log(nsfwResult, "nsfwResult>>>>>>>>>>>");
     if (nsfwResult.status === "flagged") {
       return "flagged";
     }
     return "safe";
 
   } catch (error) {
+    console.log(error.message, "error.message>>>>>>>>>>>");
     throw error instanceof Error ? error : new Error("Sensitivity analysis failed");
   }
 }
