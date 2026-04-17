@@ -202,8 +202,11 @@ export async function listVideos(
 export async function listCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const accessFilter = await buildVideoAccessFilter(req.user!);
+    console.log(accessFilter,"accessFilter>>>>");
     const categories = await Video.distinct("category", { tenantId: req.user!.tenantId, ...accessFilter });
-    categories.sort((a, b) => String(a).localeCompare(String(b)));
+    console.log(categories,"categories111111");
+    categories?.sort((a, b) => String(a).localeCompare(String(b)));
+    console.log(categories,"categories22222222");
     res.json(categories);
   } catch (error) {
     next(error);
