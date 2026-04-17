@@ -12,9 +12,21 @@ import { getErrorMessage } from "./utils/errors";
 fs.mkdirSync(env.uploadDir, { recursive: true });
 
 const app = express();
+const allowedOrigins = env.frontendOrigins;
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin not allowed"));
+    },
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(morgan("dev"));
 

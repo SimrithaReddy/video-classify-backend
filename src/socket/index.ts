@@ -5,7 +5,17 @@ import { verifyToken } from "../utils/jwt";
 
 export function initSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
-    cors: { origin: "*", methods: ["GET", "POST", "PUT", "DELETE"] },
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || env.frontendOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Socket origin not allowed"));
+      },
+      methods: ["GET", "POST"],
+    },
   });
 
   io.on("connection", (socket) => {
